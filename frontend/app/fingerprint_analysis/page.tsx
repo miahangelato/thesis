@@ -301,7 +301,7 @@ export default function FingerprintScanPage() {
       console.log("Form data loaded from storage");
     } else {
       // If no completed form data, redirect to personal info page
-      router.push("/personal_info");
+      router.push("/personal-info");
     }
   }, [retrieveFormData, router]);
 
@@ -322,7 +322,7 @@ export default function FingerprintScanPage() {
       alert(
         "Participant data not found. Please fill out the personal information form first."
       );
-      router.push("/personal_info");
+      router.push("/personal-info");
       return;
     }
 

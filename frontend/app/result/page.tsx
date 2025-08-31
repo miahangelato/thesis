@@ -403,8 +403,7 @@ export default function ResultPage() {
                     <div>
                       <strong>Data Saved Securely</strong>
                       <p className="text-sm mt-1">
-                        Participant ID: {result.participant_id}
-                        {result.result_id && `, Result ID: ${result.result_id}`}
+                        Your anonymized data is stored securely.
                       </p>
                     </div>
                   ) : (
@@ -595,12 +594,12 @@ export default function ResultPage() {
               >
                 New Analysis
               </button>
-              <button
+              {/* <button
                 onClick={() => window.print()}
                 className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
               >
                 Print Result
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -693,15 +692,15 @@ export default function ResultPage() {
         </div>
 
         {/* Debug participant data */}
-        {process.env.NODE_ENV === "development" && participantData && (
+        {/* {process.env.NODE_ENV === "development" && participantData && (
           <div className="text-xs text-gray-500 mb-4">
             Debug: willing_to_donate ={" "}
             {String(participantData.willing_to_donate)}
           </div>
-        )}
+        )} */}
 
         {/* Debug Information (for development) */}
-        {process.env.NODE_ENV === "development" && (
+        {/* {process.env.NODE_ENV === "development" && (
           <details className="mb-6">
             <summary className="cursor-pointer text-gray-500 text-sm">
               Debug Information
@@ -710,7 +709,7 @@ export default function ResultPage() {
               {JSON.stringify(result, null, 2)}
             </pre>
           </details>
-        )}
+        )} */}
 
         {/* End Button */}
         <div className="text-center">
