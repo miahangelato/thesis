@@ -7,19 +7,15 @@ const API_BASE = "http://127.0.0.1:8000/api/core/";
 
 // Submit participant data and fingerprints (multipart/form-data)
 export async function submitFingerprintAnalysis(formData: FormData) {
-  // Debug log before encryption
-  console.log('API - Original FormData:', Array.from(formData.entries()));
-  
-  // Encrypt sensitive data before sending
-  const encryptedFormData = frontendEncryption.encryptFormData(formData);
-  console.log('API - Encrypted FormData:', Array.from(encryptedFormData.entries()));
-  
-  const response = await axios.post(`${API_BASE}submit/`, encryptedFormData, {
+  console.log("API - Raw FormData:", Array.from(formData.entries()));
+
+  const response = await axios.post(`${API_BASE}submit/`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
     withCredentials: true,
   });
   return response.data;
 }
+
 
 // Submit consent only (for /consent/ endpoint)
 export async function submitConsent(consent: boolean): Promise<{ consent: boolean }> {

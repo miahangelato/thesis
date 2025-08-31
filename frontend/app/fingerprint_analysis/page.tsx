@@ -142,7 +142,7 @@ function SingleFingerprintCard({
           {/* Right Side - Scanned Image or Placeholder */}
           <div className="text-center space-y-4">
             {isScanned ? (
-              <>
+              <div className="flex flex-col items-center space-y-2">
                 <div className="text-lg font-medium text-gray-700">
                   Captured Fingerprint
                 </div>
@@ -160,15 +160,33 @@ function SingleFingerprintCard({
                   <RotateCcw className="w-4 h-4" />
                   Rescan
                 </Button>
-              </>
+              </div>
             ) : (
-              <div className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-lg mx-auto flex items-center justify-center bg-gray-50">
-                <div className="text-center text-gray-500">
-                  <Fingerprint className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <div className="text-sm">
-                    Scanned fingerprint will appear here
-                  </div>
+              // <div className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-lg mx-auto flex items-center justify-center bg-gray-50">
+              //   <div className="text-center text-gray-500">
+              //     <Fingerprint className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              //     <div className="text-sm">
+              //       Scanned fingerprint will appear here
+              //     </div>
+              //   </div>
+              // </div>
+
+              <div className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-lg mx-auto flex flex-col items-center justify-center bg-gray-50 p-2">
+                <Fingerprint className="w-12 h-12 mb-2 opacity-50 text-gray-400" />
+                <div className="text-sm text-gray-500 mb-2">
+                  Upload fingerprint file
                 </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-xs"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      onFileChange(currentFinger, file);
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
@@ -405,8 +423,8 @@ export default function FingerprintScanPage() {
     }
   };
 
-  const handleGoBack = () => {
-    router.push("/personal-info");
+  const handleBack = () => {
+    router.back();
   };
 
   const handleClearAll = () => {
@@ -427,21 +445,18 @@ export default function FingerprintScanPage() {
   }
 
   return (
-    <div className="bg-background overflow-auto">
+    <div className="bg-background overflow-auto p-4">
       <div className="flex flex-col">
         {/* Header with Back Button */}
-        <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Personal Info
-          </button>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Fingerprint className="w-5 h-5 text-blue-500" />
+        <div className="flex flex-col items-center mb-4">
+          <h1 className="flex flex-row gap-2 text-3xl font-bold text-foreground mb-2">
+            <Fingerprint className="w-10 h-10 text-blue-500" />
             Scan Fingerprints
-          </h2>
+          </h1>
+          <p className="text-foreground text-center">
+            Please scan your fingerprints using the scanner below. Make sure your fingers are clean.
+            When you're ready, submit your scans for analysis.
+          </p>
         </div>
 
         <Separator className="mb-2" />
@@ -488,6 +503,10 @@ export default function FingerprintScanPage() {
 
           {/* Buttons */}
           <div className="flex gap-4 mt-6">
+            <Button onClick={handleBack}>
+              <span className="text-sm leading-none">Back</span>
+            </Button>
+
             <button
               type="submit"
               disabled={submitting || Object.keys(fingerFiles).length === 0}

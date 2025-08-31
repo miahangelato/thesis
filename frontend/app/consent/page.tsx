@@ -44,8 +44,12 @@ export default function ConsentPage() {
     }
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   return (
-    <div className="bg-background overflow-auto">
+    <div className="bg-background overflow-auto p-6">
       <div className="flex flex-col">
         {/* Header */}
         <div className="mb-6 text-center">
@@ -62,7 +66,7 @@ export default function ConsentPage() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-row gap-4">
             {/* Quick Overview */}
-            <Card className="p-4">
+            <Card className="flex-1 p-4">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <FileText className="w-5 h-5 text-blue-500" />
@@ -98,7 +102,7 @@ export default function ConsentPage() {
             </Card>
 
             {/* Privacy & Data Handling */}
-            <Card className="p-4">
+            <Card className="flex-1 p-4">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Lock className="w-5 h-5 text-green-500" />
@@ -164,16 +168,24 @@ export default function ConsentPage() {
                 </div>
 
                 {/* Action Button */}
-                <Button
-                  onClick={handleNext}
-                  disabled={consent === null || loading}
-                  className="w-full px-4 flex items-center justify-center gap-2"
-                >
-                  <span className="text-sm leading-none">
-                    {loading ? "Processing..." : "Begin Analysis"}
-                  </span>
-                  {!loading && <ArrowRight className="w-4 h-4 flex-shrink-0" />}
-                </Button>
+                <div className="flex flex-row gap-4 justify-between items-center">
+                  <Button onClick={handleBack}>
+                    <span className="text-sm leading-none">Back</span>
+                  </Button>
+
+                  <Button
+                    onClick={handleNext}
+                    disabled={consent === null || loading}
+                    className="px-4 flex-1 items-center justify-center gap-2"
+                  >
+                    <span className="text-sm leading-none">
+                      {loading ? "Processing..." : "Begin Analysis"}
+                    </span>
+                    {!loading && (
+                      <ArrowRight className="w-4 h-4 flex-shrink-0" />
+                    )}
+                  </Button>
+                </div>
 
                 <p className="text-md text-muted-foreground text-center">
                   You can stop the process at any time. No personal identifiers

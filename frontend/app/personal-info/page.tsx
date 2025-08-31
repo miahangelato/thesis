@@ -3,22 +3,14 @@ import { useState, useEffect } from "react";
 import { useConsent } from "../../contexts/ConsentContext";
 import { ParticipantData } from "../../types/participant";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 export default function PersonalInfoPage() {
-  const {
-    storeFormData,
-    retrieveFormData,
-    clearFormData,
-  } = useConsent();
+  const { storeFormData, retrieveFormData, clearFormData } = useConsent();
   const router = useRouter();
-  
+
   const [participant, setParticipant] = useState<ParticipantData>({
     age: "",
     weight: "",
@@ -97,7 +89,7 @@ export default function PersonalInfoPage() {
 
     try {
       setSubmitting(true);
-      
+
       // Store the completed form data
       const formData = {
         participant,
@@ -137,18 +129,30 @@ export default function PersonalInfoPage() {
     clearFormData();
   };
 
+  const handleBack = () => {
+    router.back();
+  }
+
   return (
-    <div className="bg-background overflow-auto">
-      <div className="flex flex-col">
-        <h1 className="text-xl font-bold mb-4">Personal Information</h1>
+    <div className="bg-background overflow-auto p-6">
+      <div className="flex flex-col text-center">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Personal Information
+        </h1>
+        <p className="text-muted-foreground mb-4">
+          Please provide your personal and health information below.
+        </p>
+
         <Separator className="mb-6" />
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex flex-row gap-4 w-full">
             {/* Participant Info */}
-            <Card className="flex-1 p-2 text-center">
+            <Card className="flex-1 p-4">
               <CardHeader>
-                <CardTitle className="text-2xl">Participant Info</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                  Participant Info
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <input
@@ -205,16 +209,16 @@ export default function PersonalInfoPage() {
             </Card>
 
             {/* Donation Info */}
-            <Card className="flex-1 p-2">
+            <Card className="flex-1 p-4">
               <CardHeader>
-                <CardTitle className="text-2xl text-center">
+                <CardTitle className="text-2xl font-bold">
                   Donation Info
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
+                <div className="space-y-2">
                   <label className="block mb-2">Willing to Donate:</label>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 justify-center">
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
@@ -265,7 +269,9 @@ export default function PersonalInfoPage() {
                             onChange={handleChange}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm">Had alcohol in the last 24 hours</span>
+                          <span className="text-sm">
+                            Had alcohol in the last 24 hours
+                          </span>
                         </label>
 
                         <label className="flex items-center space-x-2">
@@ -298,7 +304,9 @@ export default function PersonalInfoPage() {
                             onChange={handleChange}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm">Recent tattoo or piercing</span>
+                          <span className="text-sm">
+                            Recent tattoo or piercing
+                          </span>
                         </label>
 
                         <label className="flex items-center space-x-2 col-span-2">
@@ -321,7 +329,9 @@ export default function PersonalInfoPage() {
                               onChange={handleChange}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-sm">Condition is controlled</span>
+                            <span className="text-sm">
+                              Condition is controlled
+                            </span>
                           </label>
                         )}
                       </div>
@@ -347,11 +357,17 @@ export default function PersonalInfoPage() {
 
           {/* Buttons */}
           <div className="flex gap-4 mt-6">
+            <Button onClick={handleBack}>
+              <span className="text-sm leading-none">Back</span>
+            </Button>
+
             <button
               type="submit"
               disabled={submitting}
               className={`px-4 py-2 rounded flex-1 text-white ${
-                submitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                submitting
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {submitting ? "Processing..." : "Continue to Fingerprint Scan"}

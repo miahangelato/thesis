@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConsentProvider } from "../contexts/ConsentContext";
-import LayoutWithSidebar from "./LayoutWithSidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,9 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConsentProvider>
-          <LayoutWithSidebar>{children}</LayoutWithSidebar>
-        </ConsentProvider>
+        <ConsentProvider>{children}</ConsentProvider>
       </body>
     </html>
   );
