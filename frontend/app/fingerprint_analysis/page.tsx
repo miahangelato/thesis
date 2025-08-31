@@ -1,336 +1,518 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useFingerprintAnalysis } from "../../hooks/useFingerPrintAnalysis";
-import { buildFingerprintFormData,predictBloodGroupFromSubmitData, predictBloodGroup, submitFingerprintAnalysis, predictDiabetesFromSubmitData, getParticipantData, predictDiabetesRisk } from "../../api/api_fingerprint_analysis";
+import {
+  buildFingerprintFormData,
+  predictBloodGroupFromSubmitData,
+  predictBloodGroup,
+  submitFingerprintAnalysis,
+  predictDiabetesFromSubmitData,
+  predictDiabetesRisk,
+} from "../../api/api_fingerprint_analysis";
 import { useConsent } from "../../contexts/ConsentContext";
-
 import { ParticipantData } from "../../types/participant";
 import { FingerName, FINGER_ORDER } from "../../types/fingerprint";
-import FingerprintScanner from '../../components/FingerprintScanner';
+import FingerprintScanner from "../../components/FingerprintScanner";
 import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Fingerprint,
+  Target,
+  ArrowLeft,
+  ChevronRight,
+  ChevronLeft,
+  RotateCcw,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { HandGuide } from "@/components/HandGuide";
 
-export default function FingerprintAnalysisPage() {
-  const { hasConsent, setParticipantData, setBloodGroupResult, setDiabetesResult, navigateToResultsWithData, storeFormData, retrieveFormData, clearFormData } = useConsent();
-  const { result, loading, submit } = useFingerprintAnalysis();
+// Single Fingerprint Card Component
+function SingleFingerprintCard({
+  fingerFiles,
+  onScanComplete,
+  onFileChange,
+}: {
+  fingerFiles: { [key in FingerName]?: File };
+  onScanComplete: (fingerName: FingerName, file: File) => void;
+  onFileChange: (finger: FingerName, file: File | null) => void;
+}) {
+  const [currentFingerIndex, setCurrentFingerIndex] = useState(0);
+  const currentFinger = FINGER_ORDER[currentFingerIndex];
+  const [handRaw, fingerRaw] = currentFinger.split("_");
+  const hand = handRaw as "right" | "left";
+  const highlight = fingerRaw as
+    | "thumb"
+    | "index"
+    | "middle"
+    | "ring"
+    | "pinky";
+  const isScanned = !!fingerFiles[currentFinger];
+  const totalFingers = FINGER_ORDER.length;
+
+  const handleNext = () => {
+    if (!isScanned) return; // block if current not scanned
+    if (currentFingerIndex < totalFingers - 1) {
+      setCurrentFingerIndex(currentFingerIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentFingerIndex > 0) {
+      setCurrentFingerIndex(currentFingerIndex - 1);
+    }
+  };
+
+  const handleGoToFinger = (index: number) => {
+    setCurrentFingerIndex(index);
+  };
+
+  // Auto-advance to next finger after scanning (optional)
+  const handleScanCompleteWithAdvance = (
+    fingerName: FingerName,
+    file: File
+  ) => {
+    onScanComplete(fingerName, file);
+    // Auto-advance to next unscanned finger
+    setTimeout(() => {
+      for (let i = currentFingerIndex + 1; i < totalFingers; i++) {
+        if (!fingerFiles[FINGER_ORDER[i]]) {
+          setCurrentFingerIndex(i);
+          break;
+        }
+      }
+    }, 500);
+  };
+
+  return (
+    <Card className="mx-auto shadow-lg p-4">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Target
+              className={`w-5 h-5 ${
+                isScanned ? "text-green-500" : "text-blue-500"
+              }`}
+            />
+            {currentFingerIndex + 1}.{" "}
+            {handRaw.charAt(0).toUpperCase() + handRaw.slice(1)}{" "}
+            {fingerRaw.charAt(0).toUpperCase() + fingerRaw.slice(1)}
+          </CardTitle>
+          <div className="text-sm text-gray-600">
+            {currentFingerIndex + 1} of {totalFingers}
+          </div>
+        </div>
+        <CardDescription className="flex items-center justify-between">
+          <span>
+            {isScanned ? "✅ Fingerprint captured" : "⏳ Place finger and scan"}
+          </span>
+          <div className="text-sm font-medium text-blue-600">
+            {Object.keys(fingerFiles).length}/{totalFingers} completed
+          </div>
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-2">
+        {/* Main Content Area */}
+        <div className="grid grid-cols-2 gap-4 items-center">
+          {/* Left Side - Scanner or Hand Guide */}
+          <div className="text-center">
+            {!isScanned ? (
+              <>
+                <HandGuide hand={hand} highlightFinger={highlight} />
+                <FingerprintScanner
+                  onScanComplete={handleScanCompleteWithAdvance}
+                  currentFinger={currentFinger}
+                />
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-green-600 font-medium">Scan Complete!</div>
+                <HandGuide hand={hand} highlightFinger={highlight} />
+              </div>
+            )}
+          </div>
+
+          {/* Right Side - Scanned Image or Placeholder */}
+          <div className="text-center space-y-4">
+            {isScanned ? (
+              <>
+                <div className="text-lg font-medium text-gray-700">
+                  Captured Fingerprint
+                </div>
+                <img
+                  src={URL.createObjectURL(fingerFiles[currentFinger]!)}
+                  alt={currentFinger}
+                  className="w-48 h-48 object-contain border-2 border-green-500 rounded-lg mx-auto bg-white shadow-md"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onFileChange(currentFinger, null)}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Rescan
+                </Button>
+              </>
+            ) : (
+              <div className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-lg mx-auto flex items-center justify-center bg-gray-50">
+                <div className="text-center text-gray-500">
+                  <Fingerprint className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <div className="text-sm">
+                    Scanned fingerprint will appear here
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="space-y-4">
+          {/* Finger Navigation Buttons */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentFingerIndex === 0}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </Button>
+
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-2">Jump to finger:</div>
+              <div className="flex gap-1 flex-wrap justify-center">
+                {FINGER_ORDER.map((finger, index) => {
+                  const isCompleted = !!fingerFiles[finger];
+                  const isCurrent = index === currentFingerIndex;
+
+                  // 🚫 Only allow clicking if:
+                  // - Going backwards, OR
+                  // - That finger itself is already scanned
+                  const canNavigate =
+                    index <= currentFingerIndex || isCompleted;
+
+                  return (
+                    <button
+                      key={finger}
+                      onClick={() => canNavigate && handleGoToFinger(index)}
+                      disabled={!canNavigate}
+                      className={`w-8 h-8 text-xs rounded-full border-2 font-medium transition-all
+                          ${
+                            isCurrent
+                              ? "bg-blue-500 text-white border-blue-500"
+                              : isCompleted
+                              ? "bg-green-100 text-green-700 border-green-500"
+                              : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleNext}
+              disabled={!isScanned || currentFingerIndex === totalFingers - 1}
+              className="flex items-center gap-2"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Overall Progress</span>
+              <span>
+                {Object.keys(fingerFiles).length}/{totalFingers} fingers scanned
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-in-out"
+                style={{
+                  width: `${
+                    (Object.keys(fingerFiles).length / totalFingers) * 100
+                  }%`,
+                }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function FingerprintScanPage() {
+  const {
+    hasConsent,
+    navigateToResultsWithData,
+    retrieveFormData,
+    clearFormData,
+  } = useConsent();
+
   const router = useRouter();
-  const [participant, setParticipant] = useState<ParticipantData>({
-    age: "",
-    weight: "",
-    height: "",
-    gender: "male",
-    blood_type: "O",
-    sleep_hours: "",
-    had_alcohol_last_24h: false,
-    ate_before_donation: false,
-    ate_fatty_food: false,
-    recent_tattoo_or_piercing: false,
-    has_chronic_condition: false,
-    condition_controlled: true,
-    last_donation_date: "",
-  });
-
-  const [fingerFiles, setFingerFiles] = useState<{ [key in FingerName]?: File }>({});
+  const [participant, setParticipant] = useState<ParticipantData | null>(null);
   const [willingToDonate, setWillingToDonate] = useState<boolean | null>(null);
+  const [fingerFiles, setFingerFiles] = useState<{
+    [key in FingerName]?: File;
+  }>({});
+  const [submitting, setSubmitting] = useState(false);
 
   // Load form data on component mount
   useEffect(() => {
     const savedFormData = retrieveFormData();
-    if (savedFormData) {
-      if (savedFormData.participant) {
-        setParticipant(savedFormData.participant);
-      }
-      if (savedFormData.willingToDonate !== undefined) {
-        setWillingToDonate(savedFormData.willingToDonate);
-      }
-      console.log('Form data loaded from storage');
+    if (savedFormData && savedFormData.completed) {
+      setParticipant(savedFormData.participant);
+      setWillingToDonate(savedFormData.willingToDonate);
+      console.log("Form data loaded from storage");
+    } else {
+      // If no completed form data, redirect to personal info page
+      router.push("/personal_info");
     }
-  }, [retrieveFormData]);
-
-  // Save form data whenever it changes
-  useEffect(() => {
-    const formData = {
-      participant,
-      willingToDonate,
-      timestamp: Date.now()
-    };
-    storeFormData(formData);
-  }, [participant, willingToDonate, storeFormData]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setParticipant(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
+  }, [retrieveFormData, router]);
 
   const handleFileChange = (finger: FingerName, file: File | null) => {
-    setFingerFiles(prev => ({ ...prev, [finger]: file || undefined }));
+    setFingerFiles((prev) => ({ ...prev, [finger]: file || undefined }));
   };
 
   const handleScanComplete = (fingerName: FingerName, file: File) => {
     handleFileChange(fingerName, file);
   };
 
-  const handleWillingToDonateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setWillingToDonate(e.target.value === "yes");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate that willing to donate is selected
-    if (willingToDonate === null) {
-      alert("Please indicate if you are willing to donate blood.");
+
+    if (submitting) return;
+
+    if (!participant) {
+      alert(
+        "Participant data not found. Please fill out the personal information form first."
+      );
+      router.push("/personal_info");
       return;
     }
-    
+
+    if (Object.keys(fingerFiles).length === 0) {
+      alert("Please scan at least one fingerprint.");
+      return;
+    }
+
     try {
+      setSubmitting(true);
+
       const consentString = hasConsent ? "true" : "false";
-      const formData = buildFingerprintFormData(participant, fingerFiles, consentString, willingToDonate);
+      const formData = buildFingerprintFormData(
+        participant,
+        fingerFiles,
+        consentString,
+        willingToDonate
+      );
+
       console.log("[DEBUG] Built form data:", Array.from(formData.entries()));
       console.log("[DEBUG] willingToDonate value:", willingToDonate);
-      
+
       // Step 1: Submit participant and fingerprints
       const submitRes = await submitFingerprintAnalysis(formData);
       console.log("[DEBUG] Submit response:", submitRes);
-      
+
       if (hasConsent && submitRes.saved && submitRes.participant_id) {
         // For consent=true: Data is saved, use participant_id for prediction
-        const predictionResult = await predictDiabetesRisk(submitRes.participant_id.toString(), true, formData);
-        console.log("[DEBUG] Prediction result (consent true):", predictionResult);
+        const predictionResult = await predictDiabetesRisk(
+          submitRes.participant_id.toString(),
+          true,
+          formData
+        );
+        console.log(
+          "[DEBUG] Prediction result (consent true):",
+          predictionResult
+        );
 
-        const bloodGroupResult = await predictBloodGroup(submitRes.participant_id.toString(), true);
+        const bloodGroupResult = await predictBloodGroup(
+          submitRes.participant_id.toString(),
+          true
+        );
 
         // Navigate to results with data encoded in URL
         const participantDataWithDonation = {
           ...participant,
-          willing_to_donate: willingToDonate
+          willing_to_donate: willingToDonate,
         };
-        console.log("[DEBUG] Navigating with participant data:", participantDataWithDonation);
-        
+        console.log(
+          "[DEBUG] Navigating with participant data:",
+          participantDataWithDonation
+        );
+
         // Clear form data on successful submission
         clearFormData();
-        
-        navigateToResultsWithData(predictionResult, bloodGroupResult, participantDataWithDonation);
+
+        navigateToResultsWithData(
+          predictionResult,
+          bloodGroupResult,
+          participantDataWithDonation
+        );
       } else {
         // For consent=false: Use submit response data directly for prediction
-        console.log("[DEBUG] Using submit response for prediction (consent false)");
+        console.log(
+          "[DEBUG] Using submit response for prediction (consent false)"
+        );
         const predictionResult = await predictDiabetesFromSubmitData(submitRes);
-        console.log("[DEBUG] Prediction result (consent false):", predictionResult);
+        console.log(
+          "[DEBUG] Prediction result (consent false):",
+          predictionResult
+        );
 
-        const bloodGroupResult = await predictBloodGroupFromSubmitData(submitRes, fingerFiles);
-        
+        const bloodGroupResult = await predictBloodGroupFromSubmitData(
+          submitRes,
+          fingerFiles
+        );
+
         // Navigate to results with data encoded in URL
         const participantDataWithDonation = {
           ...participant,
-          willing_to_donate: willingToDonate
+          willing_to_donate: willingToDonate,
         };
-        
+
         // Clear form data on successful submission
         clearFormData();
-        
-        navigateToResultsWithData(predictionResult, bloodGroupResult, participantDataWithDonation);
+
+        navigateToResultsWithData(
+          predictionResult,
+          bloodGroupResult,
+          participantDataWithDonation
+        );
       }
-      
-      // No longer need to redirect manually - navigateToResultsWithData handles it
     } catch (error) {
-      console.error('Submission error:', error);
-      alert('Error submitting form. Please try again.');
+      console.error("Submission error:", error);
+      alert("Error submitting form. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleGoBack = () => {
+    router.push("/personal-info");
+  };
+
+  const handleClearAll = () => {
+    // ✅ Only reset fingerprints, keep participant info
+    setFingerFiles({});
+  };
+
+  // Show loading state while checking for form data
+  if (!participant) {
+    return (
+      <div className="bg-background overflow-auto flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading form data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-xl font-bold mb-4">Sample Backend Submission</h1>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input name="age" type="number" placeholder="Age" value={participant.age} onChange={handleChange} required className="border p-1 w-full" />
-        <input name="weight" type="number" placeholder="Weight" value={participant.weight} onChange={handleChange} required className="border p-1 w-full" />
-        <input name="height" type="number" placeholder="Height" value={participant.height} onChange={handleChange} required className="border p-1 w-full" />
-        <select name="gender" value={participant.gender} onChange={handleChange} className="border p-1 w-full">
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-        <select name="blood_type" value={participant.blood_type} onChange={handleChange} className="border p-1 w-full">
-          <option value="O">O</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="AB">AB</option>
-          <option value="unknown">Unknown</option>
-        </select>
-        {/* Willing to Donate Field */}
-        <div>
-          <label className="block mb-2">Willing to Donate:</label>
-          <label className="inline-flex items-center mr-4">
-            <input
-              type="radio"
-              name="willing_to_donate"
-              value="yes"
-              checked={willingToDonate === true}
-              onChange={handleWillingToDonateChange}
-              className="form-radio"
-            />
-            <span className="ml-2">Yes</span>
-          </label>
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="willing_to_donate"
-              value="no"
-              checked={willingToDonate === false}
-              onChange={handleWillingToDonateChange}
-              className="form-radio"
-            />
-            <span className="ml-2">No</span>
-          </label>
+    <div className="bg-background overflow-auto">
+      <div className="flex flex-col">
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Personal Info
+          </button>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Fingerprint className="w-5 h-5 text-blue-500" />
+            Scan Fingerprints
+          </h2>
         </div>
 
-        {/* Blood Donation Criteria Fields */}
-        {willingToDonate && (
-          <div className="mt-4">
-            <label className="block mb-2">Blood Donation Criteria:</label>
-            <input
-              name="sleep_hours"
-              type="number"
-              placeholder="Sleep Hours"
-              value={participant.sleep_hours}
-              onChange={handleChange}
-              className="border p-1 w-full mb-2"
-            />
-            <label className="inline-flex items-center mb-2">
-              <input
-                type="checkbox"
-                name="had_alcohol_last_24h"
-                checked={participant.had_alcohol_last_24h}
-                onChange={handleChange}
-                className="form-checkbox"
-              />
-              <span className="ml-2">Had alcohol in the last 24 hours</span>
-            </label>
-            <label className="inline-flex items-center mb-2">
-              <input
-                type="checkbox"
-                name="ate_before_donation"
-                checked={participant.ate_before_donation}
-                onChange={handleChange}
-                className="form-checkbox"
-              />
-              <span className="ml-2">Ate before donation</span>
-            </label>
-            <label className="inline-flex items-center mb-2">
-              <input
-                type="checkbox"
-                name="ate_fatty_food"
-                checked={participant.ate_fatty_food}
-                onChange={handleChange}
-                className="form-checkbox"
-              />
-              <span className="ml-2">Ate fatty food</span>
-            </label>
-            <label className="inline-flex items-center mb-2">
-              <input
-                type="checkbox"
-                name="recent_tattoo_or_piercing"
-                checked={participant.recent_tattoo_or_piercing}
-                onChange={handleChange}
-                className="form-checkbox"
-              />
-              <span className="ml-2">Recent tattoo or piercing</span>
-            </label>
-            <label className="inline-flex items-center mb-2">
-              <input
-                type="checkbox"
-                name="has_chronic_condition"
-                checked={participant.has_chronic_condition}
-                onChange={handleChange}
-                className="form-checkbox"
-              />
-              <span className="ml-2">Has chronic condition</span>
-            </label>
-            {participant.has_chronic_condition && (
-              <label className="inline-flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  name="condition_controlled"
-                  checked={participant.condition_controlled}
-                  onChange={handleChange}
-                  className="form-checkbox"
-                />
-                <span className="ml-2">Condition is controlled</span>
-              </label>
-            )}
-            <label className="block mb-2">Last Donation Date:</label>
-            <input
-              name="last_donation_date"
-              type="date"
-              value={participant.last_donation_date}
-              onChange={handleChange}
-              className="border p-1 w-full"
-            />
-          </div>
-        )}
-        <div className="mt-4">
-          <h2 className="font-semibold mb-2">Scan Fingerprints</h2>
-          {FINGER_ORDER.map(finger => (
-            <div key={finger} className="mb-4">
-              <p className="mb-2">{finger.replace('_', ' ').toUpperCase()}</p>
-              {fingerFiles[finger] ? (
-                <div className="flex items-center gap-4">
-                  <img 
-                    src={URL.createObjectURL(fingerFiles[finger]!)} 
-                    alt={finger} 
-                    className="w-32 h-32 object-contain border"
-                  />
-                  <button
-                    onClick={() => handleFileChange(finger, null)}
-                    className="text-red-500"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <FingerprintScanner
-                  onScanComplete={handleScanComplete}
-                  currentFinger={finger}
-                />
-              )}
+        <Separator className="mb-2" />
+
+        {/* Summary of Personal Info */}
+        <Card className="mb-2 bg-blue-50 p-2">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Personal Information Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-6 gap-4 text-sm">
+              <div>
+                <strong>Age:</strong> {participant.age}
+              </div>
+              <div>
+                <strong>Gender:</strong> {participant.gender}
+              </div>
+              <div>
+                <strong>Height:</strong> {participant.height} cm
+              </div>
+              <div>
+                <strong>Weight:</strong> {participant.weight} kg
+              </div>
+              <div>
+                <strong>Blood Type:</strong> {participant.blood_type}
+              </div>
+              <div>
+                <strong>Willing to Donate:</strong>{" "}
+                {willingToDonate ? "Yes" : "No"}
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="flex gap-4 mt-6">
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded flex-1">
-            Submit
-          </button>
-          <button 
-            type="button" 
-            onClick={() => {
-              // Reset form to initial state
-              setParticipant({
-                age: "",
-                weight: "",
-                height: "",
-                gender: "male",
-                blood_type: "O",
-                sleep_hours: "",
-                had_alcohol_last_24h: false,
-                ate_before_donation: false,
-                ate_fatty_food: false,
-                recent_tattoo_or_piercing: false,
-                has_chronic_condition: false,
-                condition_controlled: true,
-                last_donation_date: "",
-              });
-              setFingerFiles({});
-              setWillingToDonate(null);
-              clearFormData();
-            }}
-            className="bg-gray-500 text-white px-4 py-2 rounded"
-          >
-            Clear Form
-          </button>
-        </div>
-      </form>
-  {/* Result display removed; handled by /result page after redirect */}
+          </CardContent>
+        </Card>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Single Fingerprint Scan Card */}
+          <SingleFingerprintCard
+            fingerFiles={fingerFiles}
+            onScanComplete={handleScanComplete}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Buttons */}
+          <div className="flex gap-4 mt-6">
+            <button
+              type="submit"
+              disabled={submitting || Object.keys(fingerFiles).length === 0}
+              className={`px-4 py-2 rounded flex-1 text-white ${
+                submitting || Object.keys(fingerFiles).length === 0
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {submitting
+                ? "Processing Analysis..."
+                : `Submit Analysis (${Object.keys(fingerFiles).length} scans)`}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
+              disabled={submitting}
+            >
+              Clear All Fingerprint Scans
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

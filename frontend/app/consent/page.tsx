@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   Shield,
@@ -19,24 +18,24 @@ import {
   AlertTriangle,
   Lock,
   ArrowRight,
-  CheckCircle,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 export default function ConsentPage() {
   const [consent, setConsent] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
-  const [hasReadTerms, setHasReadTerms] = useState(false);
   const router = useRouter();
   const { setHasConsent } = useConsent();
 
   const handleNext = async () => {
-    if (consent === null || !hasReadTerms) return;
+    if (consent === null) return;
 
     setLoading(true);
     try {
       await submitConsent(consent);
       setHasConsent(consent);
-      router.push("/fingerprint_analysis");
+      router.push("/personal-info");
     } catch (error) {
       console.error("Consent submission error:", error);
       alert("Error submitting consent. Please try again.");
@@ -140,110 +139,34 @@ export default function ConsentPage() {
                   <span>Your Choice</span>
                 </CardTitle>
                 <CardDescription>
-                  Choose how your data will be handled
+                  Please choose whether you consent to the use of your data
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Data Handling Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div
-                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                      consent === false
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => setConsent(false)}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          consent === false
-                            ? "border-blue-500"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {consent === false && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-foreground">
-                          Session Only
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Use data for analysis only, delete immediately after
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div
-                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                      consent === true
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+              <Separator className="mt-4 mb-4" />
+
+              <CardContent className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-4 justify-center">
+                  <Button
+                    variant={consent === true ? "default" : "outline"}
+                    className="flex-1 flex items-center justify-center gap-2"
                     onClick={() => setConsent(true)}
                   >
-                    <div className="flex items-start space-x-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          consent === true
-                            ? "border-blue-500"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {consent === true && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-foreground">
-                          Save for Research
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Save anonymized data to improve future analysis
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Terms Acknowledgment */}
-                <div className="bg-gray-50 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id="readTerms"
-                      checked={hasReadTerms}
-                      onCheckedChange={(checked) =>
-                        setHasReadTerms(checked === true)
-                      }
-                    />
-                    <label
-                      htmlFor="readTerms"
-                      className="text-sm text-foreground leading-relaxed cursor-pointer"
-                    >
-                      <div className="flex items-center space-x-2 mb-1">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="font-medium">
-                          I understand and agree
-                        </span>
-                      </div>
-                      <span className="text-md text-muted-foreground">
-                        I've read the information above and understand this is a
-                        screening tool, not a medical diagnosis. I'm at least 18
-                        years old or have guardian consent.
-                      </span>
-                    </label>
-                  </div>
+                    <ThumbsUp className="w-4 h-4" />I Consent
+                  </Button>
+                  <Button
+                    variant={consent === false ? "destructive" : "outline"}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => setConsent(false)}
+                  >
+                    <ThumbsDown className="w-4 h-4" />I Do Not Consent
+                  </Button>
                 </div>
 
                 {/* Action Button */}
                 <Button
                   onClick={handleNext}
-                  disabled={consent === null || !hasReadTerms || loading}
+                  disabled={consent === null || loading}
                   className="w-full px-4 flex items-center justify-center gap-2"
                 >
                   <span className="text-sm leading-none">
@@ -252,7 +175,7 @@ export default function ConsentPage() {
                   {!loading && <ArrowRight className="w-4 h-4 flex-shrink-0" />}
                 </Button>
 
-                <p className="text-lg text-muted-foreground text-center">
+                <p className="text-md text-muted-foreground text-center">
                   You can stop the process at any time. No personal identifiers
                   are stored.
                 </p>
